@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  prometheus:
+    image: prom/prometheus:katest
+    volumes:
+     - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+     - ./prometheus/alerts.yml:/etc/prometheus/alert.yml:ro
+    port:
+     - "9090:9090"
+  
+  alertmanager:
+    image: prom/alertmanager:latest
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    depends_on:
+      - prometheus

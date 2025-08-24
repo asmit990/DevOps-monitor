@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+ name: custom-prometheus-rules
+ namespace: monitoring
+ labels:
+   role: alert-rules
+   prometheus: k8s
+   release: prometheus
+
+
+data:
+  alerts.yml: |
+   groups:
+    - name: k8s.rules
+    rules:
+   - alert: PodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Pod crash looping
+        description: Pod {{ $labels.pod }} in ns {{ $labels.namespace }} is restarting
+
+ 
+      - alert: HighAPIErrorRate
+       expr: sum(rate(http_requests_total{code=~"5.."}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job) > 0.05
+       for: 5m
+       labels:
+        severity: critical
+       annotations:
+        summary: High

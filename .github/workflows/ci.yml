@@ -1,0 +1,72 @@
+name: ci
+runs-on: ubuntu-latest
+steps:
+- name: Checkout
+uses: actions/checkout@v4
+
+
+- name: Set up Node
+uses: actions/setup-node@v4
+with:
+node-version: 20
+
+
+- name: Install deps
+run: |
+npm ci || true
+
+
+- name: Run tests
+run: |
+npm test --if-present
+
+
+- name: Build
+run: |
+npm run build --if-present
+
+
+- name: Notify Slack (success)
+if: ${{ success() }}
+env:
+SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+run: |
+payload=$(jq -n \
+--arg repo "${{ github.repository }}" \
+--arg sha "${{ github.sha }}" \
+--arg actor "${{ github.actor }}" \
+--arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+'{
+"text": ":white_check_mark: CI passed",
+"blocks": [
+{"type":"section","text":{"type":"mrkdwn","text":":white_check_mark: *CI passed* for `\($repo)` by \($actor)"}},
+{"type":"section","fields":[
+{"type":"mrkdwn","text":"*Commit:* `\($sha)`"},
+{"type":"mrkdwn","text":"*Run:* <\($url)|Open>"}
+]}
+]
+}')
+curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
+
+
+- name: Notify Slack (failure)
+if: ${{ failure() }}
+env:
+SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+run: |
+payload=$(jq -n \
+--arg repo "${{ github.repository }}" \
+--arg sha "${{ github.sha }}" \
+--arg actor "${{ github.actor }}" \
+--arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+'{
+"text": ":x: CI failed",
+"blocks": [
+{"type":"section","text":{"type":"mrkdwn","text":":x: *CI failed* for `\($repo)` by \($actor)"}},
+{"type":"section","fields":[
+{"type":"mrkdwn","text":"*Commit:* `\($sha)`"},
+{"type":"mrkdwn","text":"*Run:* <\($url)|Open>"}
+]}
+]
+}')
+curl -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
