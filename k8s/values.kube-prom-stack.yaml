@@ -1,0 +1,11 @@
+alertmanager:
+  enabled: true
+  config:
+    existingSecret: alertmanager-config
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    resources:
+      requests:
+        memory: 400Mi
+        cpu: 200m
